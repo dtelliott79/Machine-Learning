@@ -1,0 +1,139 @@
+---
+title: "Practical Machine Learning - Course Project"
+author: "David Elliott"
+date: "December 13, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+set.seed(12345)
+```
+
+# Introduction:
+
+The goal of this project is to predict the manner in which test subjects performed the specified weight lifting exercise. Six subjects were asked to perform 10 repetitions of Biceps Curl using correct technique (Class A), or using one of four incorrect techniques: throwing elbows (Class B), partial lifting (Class C), partial lowering (Class D), or throwing hips (Class E). This analysis attempts to predict the technique used (Class A-E; the "classe" variable in the training dataset), using any combination of other variables,  
+
+# Getting the Data:
+
+```{r getdata}
+download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = paste0(getwd(), "/", "training.csv"))
+download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile = paste0(getwd(), "/", "testing.csv"))
+print("Date downloaded:");date()
+
+inBuild <- read.csv("training.csv",header=TRUE,na.strings=c("",".","NA"))
+validation <- read.csv("testing.csv",header=TRUE,na.strings=c("",".","NA"))
+suppressMessages(library(caret))
+inTrain <- createDataPartition(y=inBuild$classe, p=0.6, list=FALSE)
+training <- inBuild[inTrain,]
+testing <- inBuild[-inTrain,]
+```
+
+# Cleaning the Data:
+
+Obviously, predictions cannot be made for "classe" on covariables for which there is not information. Therefore, any variables for which the validation set (original testing dataset) does not contain measured values are removed from the training and testing sets.
+
+Because the goal is to create a model that is generally applicable across persons and times, the variables indicating test subject ("user_name") and timestamp ("raw_timestamp_part_1", "raw_timestamp_part_2", and "cvtd_timestamp
+") are removed from consideration, as are "new_window" and "num_window". 
+
+In addition, exploratory analysis indicates that the large number of potential covariates are highly correlated. In fact, the individual components of acceleration (x, y, and z variables), are likely used in some formulae to calculate roll, pitch, yaw, and total acceleration. As such, these individual components are left out of the pool of potential covariates, in order to avoid overfitting and to decrease time required to fit models.
+
+```{r subsetdata}
+training <- training[,!sapply(validation, function(x)all(is.na(x)))]
+testing <- testing[,!sapply(validation, function(x)all(is.na(x)))]
+
+training <- subset(training, select=-c(X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window))
+testing <- subset(testing, select=-c(X, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window))
+
+xyz_index <- grep("[_][XxYyZz]$", names(training))
+training <- training[, c(names(training)[-xyz_index])]
+testing <- testing[, c(names(testing)[-xyz_index])]
+```
+
+# Model Fitting and Cross Validation:
+
+Several different models were fit to the redefined training data set (60% of original training data). The models were all built to predict lifting technique used, including correct technique ("classe" = 1), or one of four incorrect techniques: throwing elbows ("classe" =  2), partial lifting ("classe" =  3), partial lowering ("classe" =  4), or throwing hips ("classe" =  5). The models were cross validated by comparing the accuracy of predictions versus observations in the redefined test data set (other 40% of original training data). Accuracy was assessed in all models by means of confusion matrices. Models fit were:
+
+### Regression Tree
+```{r regtree, cache=TRUE}
+Fitrt <- train(classe~.,method="rpart1SE",data=training)
+predrt <- predict(Fitrt, testing)
+accrt <- confusionMatrix(predrt, testing$classe)$overall[1]
+```
+The regression tree model fit to the training data set using the code above resulted in an accuracy of `r format(100*accrt,scientific=FALSE,trim=TRUE)`% on the testing data set. This equates to an out of sample error of `r format(100*(1-accrt),scientific=FALSE,trim=TRUE)`%.
+
+### Bagging
+```{r bagging, cache=TRUE}
+Fitbg <- train(classe~.,method="treebag",data=training)
+predbg <- predict(Fitbg, testing)
+accbg <- confusionMatrix(predbg, testing$classe)$overall[1]
+```
+The bagging model fit to the training data set using the code above resulted in an accuracy of `r format(100*accbg,scientific=FALSE,trim=TRUE)`% on the testing data set. This equates to an out of sample error of `r format(100*(1-accbg),scientific=FALSE,trim=TRUE)`%.
+
+### Random Forest
+
+NOTE: Random forest model fitting on the full training dataset can take prohibitively long. To prevent this, several lines of code are added below to allow use of only those covariates with a relative importance of 30 or greater among the 17 original covariables, determined based on a preliminary model fit to a small subset of the data.
+```{r ranfor, cache=TRUE}
+memory.limit(size=3800)
+incovartraining <- createDataPartition(y=training$classe,p=0.1,list=FALSE)
+covartraining <- training[incovartraining,]
+Fitrf0 <- train(classe ~ .,data=covartraining,method="rf")
+impvars <- data.frame(varImp(Fitrf0)$importance)
+impvars$vars <- row.names(impvars)
+rfvars <- impvars[impvars$Overall>=30,2]
+rfvars
+
+Fitrf <- train(classe ~ roll_belt+yaw_belt+pitch_forearm+pitch_belt+roll_dumbbell+roll_forearm+yaw_dumbbell,data=training,method="rf")
+predrf <- predict(Fitrf,testing)
+accrf <- confusionMatrix(predrf, testing$classe)$overall[1]
+```
+The random forest model fit to the training data set using the code above resulted in an accuracy of `r format(100*accrf,scientific=FALSE,trim=TRUE)`% on the testing data set. This equates to an out of sample error of `r format(100*(1-accrf),scientific=FALSE,trim=TRUE)`%.
+
+### Boosting
+```{r boosting, cache=TRUE}
+Fitbs <- train(classe ~ .,data=training,method="gbm",verbose=FALSE)
+predbs <- predict(Fitbs,testing)
+accbs <- confusionMatrix(predbs, testing$classe)$overall[1]
+```
+The boosing model fit to the training data set using the code above resulted in an accuracy of `r format(100*accbs,scientific=FALSE,trim=TRUE)`% on the testing data set. This equates to an out of sample error of `r format(100*(1-accbs),scientific=FALSE,trim=TRUE)`%.
+
+### Combined Predictors
+
+The most important covariables in the bagging, random forest, and boosting models are all very similar, with bagging giving the most accurate predictions. Regression tree, while the least accurate, gives a seemingly divergent result in terms of covariates selected as important. Therefore, a combined model is fit below that combines bagging and regression tree models to try to further improve model accuracy.
+
+```{r combpred, cache=TRUE}
+varImp(Fitrt)
+varImp(Fitbg)
+varImp(Fitrf)
+varImp(Fitbs)
+
+inTrain2 <- createDataPartition(y=training$classe,p=0.6,list=FALSE)
+training1 <- training[inTrain2,]
+training2 <- training[-inTrain2,]
+
+fit1 <- train(classe~.,data=training1,method="treebag")
+fit2 <- train(classe~.,data=training1,method="rpart1SE")
+pred1 <- predict(fit1, training2)
+pred2 <- predict(fit2, training2)
+
+predDF <- data.frame(pred1,pred2,classe=training2$classe)
+combFit <- train(classe~.,method="lda",data=predDF)
+
+pred1t <- predict(fit1, testing)
+pred2t <- predict(fit2, testing)
+predtDF <- data.frame(pred1=pred1t,pred2=pred2t,classe=testing$classe)
+combpred <- predict(combFit,predtDF)
+
+acccomb <- confusionMatrix(combpred, testing$classe)$overall[1]
+```
+The combined predictors model (bagging and regression tree) fit to the training data set using the code above resulted in an accuracy of `r format(100*acccomb,scientific=FALSE,trim=TRUE)`% on the testing data set. This equates to an out of sample error of `r format(100*(1-acccomb),scientific=FALSE,trim=TRUE)`%.
+
+#Conclusions:
+
+Of the models fit above, the bagging model has the highest accuracy on the testing data set, corresponding to the lowest out of sample error. Combining predictors (bagging and regression tree) into one model does not further decrease the out of sample error, suggesting that this combined model overfits the training data. Therefore, the random forest model, by itself, is considered to be the best predictor of "classe", and is used to predict weight lifting technique "classe" in the quiz (predictions not shown, to protect the innocent).
+
+# References:
+
+Original Data: Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz4SSEBZnHV
