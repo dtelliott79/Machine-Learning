@@ -125,7 +125,7 @@ $(document).ready(function () {
 
 <div id="introduction" class="section level1">
 <h1>Introduction:</h1>
-<p>The goal of this project is to predict the manner in which test subjects performed the specified weight lifting exercise. Six subjects were asked to perform 10 repetitions of Biceps Curl using correct technique (Class A), or using one of four incorrect techniques: throwing elbows (Class B), partial lifting (Class C), partial lowering (Class D), or throwing hips (Class E). This analysis attempts to predict the technique used (Class A-E; the “classe” variable in the training dataset), using any combination of other variables,</p>
+<p>The goal of this project is to predict the manner in which test subjects performed the specified weight lifting exercise. Six subjects were asked to perform 10 repetitions of Biceps Curl using correct technique (Class A), or using one of four incorrect techniques: throwing elbows (Class B), partial lifting (Class C), partial lowering (Class D), or throwing hips (Class E). This analysis attempts to predict the technique used (Class A-E; the “classe” variable in the training dataset), using any combination of other variables.</p>
 </div>
 <div id="getting-the-data" class="section level1">
 <h1>Getting the Data:</h1>
@@ -133,7 +133,7 @@ $(document).ready(function () {
 download.file(&quot;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;, destfile = paste0(getwd(), &quot;/&quot;, &quot;testing.csv&quot;))
 print(&quot;Date downloaded:&quot;);date()</code></pre>
 <pre><code>## [1] &quot;Date downloaded:&quot;</code></pre>
-<pre><code>## [1] &quot;Wed Dec 14 06:53:15 2016&quot;</code></pre>
+<pre><code>## [1] &quot;Wed Dec 14 17:20:46 2016&quot;</code></pre>
 <pre class="r"><code>inBuild &lt;- read.csv(&quot;training.csv&quot;,header=TRUE,na.strings=c(&quot;&quot;,&quot;.&quot;,&quot;NA&quot;))
 validation &lt;- read.csv(&quot;testing.csv&quot;,header=TRUE,na.strings=c(&quot;&quot;,&quot;.&quot;,&quot;NA&quot;))
 suppressMessages(library(caret))
@@ -297,7 +297,7 @@ acccomb &lt;- confusionMatrix(combpred, testing$classe)$overall[1]</code></pre>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions:</h1>
-<p>Of the models fit above, the bagging model has the highest accuracy on the testing data set, corresponding to the lowest out of sample error. Combining predictors (bagging and regression tree) into one model does not further decrease the out of sample error, suggesting that this combined model overfits the training data. Therefore, the random forest model, by itself, is considered to be the best predictor of “classe”, and is used to predict weight lifting technique “classe” in the quiz (predictions not shown, to protect the innocent).</p>
+<p>Of the models fit above, the bagging model has the highest accuracy on the testing data set, corresponding to the lowest out of sample error. Combining predictors (bagging and regression tree) into one model does not further decrease the out of sample error, suggesting that this combined model overfits the training data. Therefore, the bagging, by itself, is considered to be the best predictor of “classe”, and is used to predict weight lifting technique “classe” in the quiz (predictions not shown, to protect the innocent).</p>
 </div>
 <div id="references" class="section level1">
 <h1>References:</h1>

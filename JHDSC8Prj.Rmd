@@ -12,7 +12,7 @@ set.seed(12345)
 
 # Introduction:
 
-The goal of this project is to predict the manner in which test subjects performed the specified weight lifting exercise. Six subjects were asked to perform 10 repetitions of Biceps Curl using correct technique (Class A), or using one of four incorrect techniques: throwing elbows (Class B), partial lifting (Class C), partial lowering (Class D), or throwing hips (Class E). This analysis attempts to predict the technique used (Class A-E; the "classe" variable in the training dataset), using any combination of other variables,  
+The goal of this project is to predict the manner in which test subjects performed the specified weight lifting exercise. Six subjects were asked to perform 10 repetitions of Biceps Curl using correct technique (Class A), or using one of four incorrect techniques: throwing elbows (Class B), partial lifting (Class C), partial lowering (Class D), or throwing hips (Class E). This analysis attempts to predict the technique used (Class A-E; the "classe" variable in the training dataset), using any combination of other variables.
 
 # Getting the Data:
 
@@ -130,7 +130,7 @@ The combined predictors model (bagging and regression tree) fit to the training 
 
 #Conclusions:
 
-Of the models fit above, the bagging model has the highest accuracy on the testing data set, corresponding to the lowest out of sample error. Combining predictors (bagging and regression tree) into one model does not further decrease the out of sample error, suggesting that this combined model overfits the training data. Therefore, the random forest model, by itself, is considered to be the best predictor of "classe", and is used to predict weight lifting technique "classe" in the quiz (predictions not shown, to protect the innocent).
+Of the models fit above, the bagging model has the highest accuracy on the testing data set, corresponding to the lowest out of sample error. Combining predictors (bagging and regression tree) into one model does not further decrease the out of sample error, suggesting that this combined model overfits the training data. Therefore, the bagging, by itself, is considered to be the best predictor of "classe", and is used to predict weight lifting technique "classe" in the quiz (predictions not shown, to protect the innocent).
 
 # References:
 
