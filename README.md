@@ -1,4 +1,4 @@
-#### For finished product, see: 
+#### For finished product of analysis, see: 
 
 ##Background
 
